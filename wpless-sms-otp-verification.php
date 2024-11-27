@@ -5,52 +5,17 @@ Description: Use Firebase for OTP verification during WooCommerce checkout.
 Version: 1.0
 Author: Your Name
 */
-
-defined('ABSPATH') || exit;
-
-// Define Plugin Path
-define('WPLESS_SMS_OTP_PLUGIN_DIR', plugin_dir_path(__FILE__));
-
-// Include Admin Settings
-require_once WPLESS_SMS_OTP_PLUGIN_DIR . 'includes/admin-settings.php';
-
-// Enqueue Scripts and Styles
-function wpless_sms_otp_enqueue_scripts() {
-    if (is_checkout()) {
-        wp_enqueue_script('firebase-app', 'https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js', [], null, true);
-        wp_enqueue_script('firebase-auth', 'https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js', ['firebase-app'], null, true);
-        wp_enqueue_script('firebase-otp', plugins_url('includes/firebase-otp.js', __FILE__), ['firebase-auth'], null, true);
-        wp_localize_script('firebase-otp', 'firebaseConfig', get_option('wpless_sms_otp_firebase_config'));
-    }
+ // Ensure WooCommerce is active
+if (!class_exists('WooCommerce')) {
+    return;
 }
-add_action('wp_enqueue_scripts', 'wpless_sms_otp_enqueue_scripts');
 
-// Add OTP Field in Checkout
-function wpless_sms_otp_add_checkout_field($fields) {
-    $fields['billing']['billing_otp'] = [
-        'type'        => 'text',
-        'label'       => __('OTP Verification', 'wpless'),
-        'required'    => true,
-        'class'       => ['form-row-wide'],
-        'placeholder' => __('Enter OTP', 'wpless'),
-    ];
-    return $fields;
-}
-add_filter('woocommerce_billing_fields', 'wpless_sms_otp_add_checkout_field');
-
-// Validate OTP Field
-function wpless_sms_otp_validate_checkout_field($posted) {
-    if (empty($posted['billing_otp']) || $posted['billing_otp'] !== $_SESSION['firebase_otp']) {
-        wc_add_notice(__('Invalid OTP. Please try again.', 'wpless'), 'error');
-    }
-}
-add_action('woocommerce_checkout_process', 'wpless_sms_otp_validate_checkout_field');
-// Remove Email Field and Add Phone Number Field in Registration
+// Add Phone Number Field to Registration and Remove Email Field
 function wpless_replace_email_with_phone($fields) {
-    // Remove the email field
+    // Remove email field
     unset($fields['email']);
 
-    // Add the phone number field
+    // Add phone field
     $fields['phone'] = [
         'type'        => 'tel',
         'label'       => __('Phone Number', 'wpless'),
@@ -73,7 +38,7 @@ function wpless_validate_phone_on_registration($username, $email, $validation_er
 }
 add_action('woocommerce_register_post', 'wpless_validate_phone_on_registration', 10, 3);
 
-// Save Phone Number as Username
+// Save Phone Number as Username During Registration
 function wpless_save_phone_as_username($customer_id) {
     if (isset($_POST['phone']) && !empty($_POST['phone'])) {
         update_user_meta($customer_id, 'phone', sanitize_text_field($_POST['phone']));
@@ -85,7 +50,7 @@ function wpless_save_phone_as_username($customer_id) {
 }
 add_action('woocommerce_created_customer', 'wpless_save_phone_as_username');
 
-// Replace Login Email Field with Phone Number
+// Replace Email Field with Phone Number in Login Form
 function wpless_replace_email_with_phone_in_login($args) {
     $args['label_username'] = __('Phone Number', 'wpless');
     $args['placeholder_username'] = __('Enter your phone number', 'wpless');
@@ -99,6 +64,7 @@ function wpless_login_with_phone($user, $username, $password) {
         return $user;
     }
 
+    // Check if username is not an email and look for the phone number
     if (!is_email($username)) {
         $user_query = new WP_User_Query([
             'meta_key'   => 'phone',
@@ -120,8 +86,28 @@ add_filter('authenticate', 'wpless_login_with_phone', 20, 3);
 // Remove Email Field from My Account Page
 function wpless_remove_email_in_account_page($fields) {
     if (isset($fields['account_email'])) {
-        unset($fields['account_email']);
+        unset($fields['account_email']); // Remove email field
     }
+
+    // Add Phone Number Field (if not already displayed)
+    if (!isset($fields['account_phone'])) {
+        $fields['account_phone'] = [
+            'type'        => 'tel',
+            'label'       => __('Phone Number', 'wpless'),
+            'required'    => true,
+            'class'       => ['form-row-wide'],
+            'placeholder' => __('Enter your phone number', 'wpless'),
+        ];
+    }
+
     return $fields;
 }
 add_filter('woocommerce_edit_account_fields', 'wpless_remove_email_in_account_page');
+
+// Save Phone Number from My Account Form
+function wpless_save_account_details($user_id) {
+    if (isset($_POST['account_phone']) && !empty($_POST['account_phone'])) {
+        update_user_meta($user_id, 'phone', sanitize_text_field($_POST['account_phone']));
+    }
+}
+add_action('woocommerce_save_account_details', 'wpless_save_account_details');
