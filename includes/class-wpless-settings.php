@@ -18,7 +18,7 @@ class Wpless_Settings {
 
     // Register settings fields
     public static function register_settings() {
-        register_setting( 'wpless_sms_otp_settings_group', 'firebase_config_file' );
+        register_setting( 'wpless_sms_otp_settings_group', 'firebase_config_json' );
     }
 
     // Render settings page
@@ -26,14 +26,14 @@ class Wpless_Settings {
         ?>
         <div class="wrap">
             <h1>WPLess SMS OTP Verification Settings</h1>
-            <form method="post" action="options.php" enctype="multipart/form-data">
+            <form method="post" action="options.php">
                 <?php settings_fields( 'wpless_sms_otp_settings_group' ); ?>
                 <table class="form-table">
                     <tr>
-                        <th scope="row">Upload Firebase Config File</th>
+                        <th scope="row">Firebase Configuration (JSON)</th>
                         <td>
-                            <input type="file" name="firebase_config_file" />
-                            <p class="description">Upload the Firebase JSON config file here.</p>
+                            <textarea name="firebase_config_json" rows="10" class="large-text"><?php echo esc_textarea( get_option( 'firebase_config_json' ) ); ?></textarea>
+                            <p class="description">Paste your Firebase JSON config here. You can find this in your Firebase console.</p>
                         </td>
                     </tr>
                 </table>

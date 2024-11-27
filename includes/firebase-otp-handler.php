@@ -1,25 +1,28 @@
 <?php
 function wpless_handle_firebase_otp($phone_number) {
-    // You would need to load Firebase SDK here
-    // Ensure you have Firebase set up to use the Admin SDK
-    // Use the uploaded config file to initialize Firebase
+    // Get Firebase config JSON from settings
+    $firebase_config_json = get_option( 'firebase_config_json' );
 
-    // Check if Firebase config exists in settings
-    $firebase_config_file = get_option( 'firebase_config_file' );
-    
-    if ( empty( $firebase_config_file ) ) {
+    if ( empty( $firebase_config_json ) ) {
         return new WP_Error( 'firebase_config_missing', 'Firebase configuration is missing' );
     }
 
-    // Assuming the config file is a JSON file uploaded by the admin
-    $firebase_config = json_decode( file_get_contents( $firebase_config_file ), true );
+    // Decode the JSON config into an array
+    $firebase_config = json_decode( $firebase_config_json, true );
+
+    if ( json_last_error() !== JSON_ERROR_NONE ) {
+        return new WP_Error( 'firebase_config_invalid', 'Invalid Firebase JSON configuration' );
+    }
 
     // Initialize Firebase SDK with the config
-    // Your Firebase SDK initialization code goes here
-    // For example, you would initialize Firebase Auth and ReCAPTCHA
+    // Use the Firebase SDK to set up authentication (this part should be handled in Firebase Admin SDK or similar)
+
+    // Example code for Firebase Admin SDK (on the server):
+    // $firebase = new Firebase\FirebaseApp($firebase_config);
+    // $auth = $firebase->getAuth();
 
     // For Firebase phone verification, you'd call the Firebase phone auth function
+    // This part would need Firebase SDK to be available on your server
 
-    // Return success or error response
-    return true;
+    return true; // Return success or error response
 }
