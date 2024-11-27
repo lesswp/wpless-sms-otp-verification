@@ -30,3 +30,4 @@ function wpless_sms_otp_verification_init() {
     Wpless_SMS_OTP_Verification::init();
 }
 add_action( 'plugins_loaded', 'wpless_sms_otp_verification_init' );
+
